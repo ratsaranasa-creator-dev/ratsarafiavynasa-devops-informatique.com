@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de CV Professionnel</title>
+    <!-- Bibliothèques pour l'export PDF/DOC -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Formulaire */
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Sections dynamiques */
+        .dynamic-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .section-header h3 {
+            color: #444;
+            font-size: 1.1rem;
+        }
+
+        .btn-add-section {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-add-section:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .btn-remove {
+            background: #ff4757;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .btn-remove:hover {
+            background: #ff6b81;
+            transform: rotate(90deg);
+        }
+
+        /* Aperçu du CV */
+        .preview-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 20px;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .preview-controls button, .preview-controls select {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .preview-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .preview-controls select {
+            background: white;
+            color: #333;
+            border: 2px solid #667eea;
+        }
+
+        /* Template CV */
+        .cv-template {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg-color, white);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s;
+        }
+
+        .cv-header {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 3px solid #667eea;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .profile-image:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-image input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .cv-title {
+            flex: 1;
+        }
+
+        .cv-title h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .cv-title p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .cv-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .cv-section {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .cv-section h2 {
+            color: #667eea;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cv-section-content {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* Couleurs de fond prédéfinies */
+        .bg-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .bg-option {
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .bg-option:hover {
+            transform: scale(1.05);
+            border-color: #667eea;
+        }
+
+        .bg-option.selected {
+            border-color: #333;
+            box-shadow: 0 0 0 2px #667eea;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Section Formulaire -->
+        <div class="form-section">
+            <h2>📝 Créez votre CV professionnel</h2>
+            
+            <!-- Informations personnelles -->
+            <div class="dynamic-section">
+                <div class="section-header">
+                    <h3>👤 Informations personnelles</h3>
+                </div>
+                <div class="form-group">
+                    <label>Nom complet</label>
+                    <input type="text" id="fullname" placeholder="Jean Dupont" value="Jean Dupont">
+                </div>
+                <div class="form-group">
+                    <label>Titre professionnel</label>
+                    <input type="text" id="title" placeholder="Développeur Full Stack" value="Développeur Full Stack">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="jean.dupont@email.com" value="jean.dupont@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Téléphone</label>
+                    <input type="tel" id="phone" placeholder="+33 6 12 34 56 78" value="+33 6 12 34 56 78">
+                </div>
+                <div class="form-group">
+                    <label>Adresse</label>
+                    <input type="text" id="address" placeholder="Paris, France" value="Paris, France">
+                </div>
+            </div>
+
+            <!-- Sections dynamiques -->
+            <div id="dynamic-sections-container"></div>
+
+            <!-- Bouton pour ajouter des sections -->
+            <button class="btn-add-section" onclick="addNewSection()">
+                + Ajouter une section personnalisée
+            </button>
+
+            <!-- Options de fond -->
+            <div style="margin-top: 30px;">
+                <h3 style="margin-bottom: 10px; color: #444;">🎨 Changer la couleur de fond</h3>
+                <div class="bg-options">
+                    <div class="bg-option selected" style="background: #ffffff;" onclick="changeBgColor('#ffffff')"></div>
+                    <div class="bg-option" style="background: #f8f9fa;" onclick="changeBgColor('#f8f9fa')"></div>
+                    <div class="bg-option" style="background: #e3f2fd;" onclick="changeBgColor('#e3f2fd')"></div>
+                    <div class="bg-option" style="background: #fff3e0;" onclick="changeBgColor('#fff3e0')"></div>
+                    <div class="bg-option" style="background: #f3e5f5;" onclick="changeBgColor('#f3e5f5')"></div>
+                    <div class="bg-option" style="background: #e8f5e8;" onclick="changeBgColor('#e8f5e8')"></div>
+                    <div class="bg-option" style="background: #ffebee;" onclick="changeBgColor('#ffebee')"></div>
+                    <div class="bg-option" style="background: #e0f2f1;" onclick="changeBgColor('#e0f2f1')"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Aperçu -->
+        <div class="preview-section">
+            <div class="preview-controls">
+                <select id="exportFormat">
+                    <option value="pdf">PDF</option>
+                    <option value="doc">DOCX</option>
+                </select>
+                <button onclick="exportCV()">📥 Télécharger le CV</button>
+                <button onclick="saveToLocalStorage()">💾 Sauvegarder</button>
+                <button onclick="loadFromLocalStorage()">📂 Charger</button>
+            </div>
+
+            <!-- Template du CV -->
+            <div class="cv-template" id="cvTemplate">
+                <div class="cv-header">
+                    <div class="profile-image" onclick="document.getElementById('profileInput').click()">
+                        <img id="profilePreview" src="https://via.placeholder.com/150" alt="Photo de profil">
+                        <input type="file" id="profileInput" accept="image/*" onchange="previewImage(this)">
+                    </div>
+                    <div class="cv-title">
+                        <h1 id="previewFullname">Nasa Ratsafiavy</h1>
+                        <p id="previewTitle">Développeur Full Stack</p>
+                        <p id="previewContact">ratsaranasa@email.com | +261 79 208 98 | Tanà, Madagascar</p>
+                    </div>
+                </div>
+
+                <div class="cv-sections" id="cvSectionsContainer">
+                    <!-- Les sections dynamiques seront injectées ici -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let sections = [
+            { id: 'connaissances', title: 'Connaissances', content: 'JavaScript, Python, React, Node.js' },
+            { id: 'experiences', title: 'Expériences', content: '5 ans en développement web' }
+        ];
+        
+        let currentBgColor = '#ffffff';
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            renderSections();
+            updatePreview();
+            loadFromLocalStorage();
+        });
+
+        // Fonctions pour les sections dynamiques
+        function addNewSection() {
+            const sectionId = 'section_' + Date.now();
+            sections.push({
+                id: sectionId,
+                title: 'Nouvelle section',
+                content: 'Contenu de la section'
+            });
+            renderSections();
+            updatePreview();
+        }
+
+        function removeSection(sectionId) {
+            sections = sections.filter(s => s.id !== sectionId);
+            renderSections();
+            updatePreview();
+        }
+
+        function updateSectionTitle(sectionId, newTitle) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) {
+                section.title = newTitle;
+                updatePreview();
+            }
+        }
+
+        function updateSectionContent(sectionId, newContent) {
+            const section = sections.find(s => s.id === sectionId);
+            if (section) {
+                section.content = newContent;
+                updatePreview();
+            }
+        }
+
+        function renderSections() {
+            const container = document.getElementById('dynamic-sections-container');
+            container.innerHTML = '';
+
+            sections.forEach(section => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'dynamic-section';
+                sectionDiv.innerHTML = `
+                    <div class="section-header">
+                        <h3>${section.title}</h3>
+                        <button class="btn-remove" onclick="removeSection('${section.id}')">×</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Titre de la section</label>
+                        <input type="text" value="${section.title}" onchange="updateSectionTitle('${section.id}', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Contenu</label>
+                        <textarea rows="3" onchange="updateSectionContent('${section.id}', this.value)">${section.content}</textarea>
+                    </div>
+                `;
+                container.appendChild(sectionDiv);
+            });
+        }
+
+        // Mise à jour de l'aperçu
+        function updatePreview() {
+            // Mettre à jour les informations personnelles
+            document.getElementById('previewFullname').textContent = document.getElementById('fullname').value || 'Nom complet';
+            document.getElementById('previewTitle').textContent = document.getElementById('title').value || 'Titre professionnel';
+            
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            document.getElementById('previewContact').textContent = `${email} | ${phone} | ${address}`;
+
+            // Mettre à jour les sections dynamiques
+            const cvSectionsContainer = document.getElementById('cvSectionsContainer');
+            cvSectionsContainer.innerHTML = '';
+
+            sections.forEach(section => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'cv-section';
+                sectionDiv.innerHTML = `
+                    <h2>${section.title}</h2>
+                    <div class="cv-section-content">${section.content.replace(/\n/g, '<br>')}</div>
+                `;
+                cvSectionsContainer.appendChild(sectionDiv);
+            });
+
+            // Appliquer la couleur de fond
+            document.getElementById('cvTemplate').style.backgroundColor = currentBgColor;
+        }
+
+        // Gestion de l'image de profil
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profilePreview').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Changement de couleur de fond
+        function changeBgColor(color) {
+            currentBgColor = color;
+            document.getElementById('cvTemplate').style.backgroundColor = color;
+            
+            // Mettre à jour la classe selected
+            document.querySelectorAll('.bg-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.style.backgroundColor === color) {
+                    opt.classList.add('selected');
+                }
+            });
+        }
+
+        // Sauvegarde dans localStorage
+        function saveToLocalStorage() {
+            const cvData = {
+                fullname: document.getElementById('fullname').value,
+                title: document.getElementById('title').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                profileImage: document.getElementById('profilePreview').src,
+                sections: sections,
+                bgColor: currentBgColor
+            };
+            
+            localStorage.setItem('cvData', JSON.stringify(cvData));
+            alert('CV sauvegardé avec succès !');
+        }
+
+        // Chargement depuis localStorage
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('cvData');
+            if (savedData) {
+                const cvData = JSON.parse(savedData);
+                
+                document.getElementById('fullname').value = cvData.fullname || '';
+                document.getElementById('title').value = cvData.title || '';
+                document.getElementById('email').value = cvData.email || '';
+                document.getElementById('phone').value = cvData.phone || '';
+                document.getElementById('address').value = cvData.address || '';
+                
+                if (cvData.profileImage) {
+                    document.getElementById('profilePreview').src = cvData.profileImage;
+                }
+                
+                if (cvData.sections) {
+                    sections = cvData.sections;
+                    renderSections();
+                }
+                
+                if (cvData.bgColor) {
+                    changeBgColor(cvData.bgColor);
+                }
+                
+                updatePreview();
+                alert('CV chargé avec succès !');
+            }
+        }
+
+        // Export du CV
+        function exportCV() {
+            const format = document.getElementById('exportFormat').value;
+            const element = document.getElementById('cvTemplate');
+            
+            if (format === 'pdf') {
+                const opt = {
+                    margin: [0.5, 0.5, 0.5, 0.5],
+                    filename: 'mon_cv.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, letterRendering: true },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(element).save();
+            } else if (format === 'doc') {
+                // Pour DOCX, on crée un fichier HTML simple
+                const content = element.outerHTML;
+                const style = document.querySelector('style').innerHTML;
+                const html = `
+                    <html>
+                        <head>
+                            <style>${style}</style>
+                        </head>
+                        <body>${content}</body>
+                    </html>
+                `;
+                
+                const blob = new Blob([html], { type: 'application/msword' });
+                saveAs(blob, 'mon_cv.doc');
+            }
+        }
+
+        // Écouteurs d'événements pour la mise à jour en temps réel
+        document.getElementById('fullname').addEventListener('input', updatePreview);
+        document.getElementById('title').addEventListener('input', updatePreview);
+        document.getElementById('email').addEventListener('input', updatePreview);
+        document.getElementById('phone').addEventListener('input', updatePreview);
+        document.getElementById('address').addEventListener('input', updatePreview);
+    </script>
+</body>
+</html>
